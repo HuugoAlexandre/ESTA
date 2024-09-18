@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import os # só pra não poluir o path com caminho absoluto
+import scipy.stats as scp
 
 sync = np.array([94, 84.9, 82.6, 69.5, 80.1, 79.6, 81.4, 77.8, 81.7, 78.8, 73.2, 87.9, 87.9, 93.5, 82.3, 79.3,
 78.3, 71.6, 88.6, 74.6, 74.1, 80.6])
@@ -111,3 +112,72 @@ ponto_corte = dados['Open'].std(ddof=1) * 3
 inf, sup = x - ponto_corte, x + ponto_corte
 outliers = dados['Open'][(dados['Open'] < inf) | (dados['Open'] > sup)]
 print(outliers)
+
+# Time Series -> Análise da variabilidade de determinado dado em função do tempo
+stock['Date'] = pd.to_datetime(stock['Date'])
+sns.lineplot(data=stock, x='Date', y='High')
+sns.lineplot(data=stock, x='Date', y='Low')
+plt.show()
+print(stock.head())
+
+x = iris['SepalLengthCm']
+y = iris['SepalWidthCm']
+# Coeficiente de correlação, saber o quanto uma variável está relacionada uma com a outra
+print(scp.spearmanr(x, y)) # assimétrico, não paramétrico
+# scp.pearsonr(x,y) -> teste paramétrico (dentro de certo parâmetro), todas as variáveis precisam ter distribuição normal
+sns.scatterplot(data=iris, x='SepalLengthCm', y='SepalWidthCm')
+plt.show()
+sns.boxplot([x,y])
+plt.show()
+
+tipo_e_tamanho = ['SepalLengthCm', 'SepalWidthCm', 'PetalLengthCm', 'PetalWidthCm']
+
+# Filtra pelo nome da espécie
+iris_setosa = iris[iris['Species'] == 'Iris-setosa']
+
+def process_iris_data(iris, species, x_col, y_col):
+    # Filtra os dados pela espécie
+    iris_species = iris[iris['Species'] == species]
+    
+    # Extrai os valores de x e y
+    x = iris_species[x_col]
+    y = iris_species[y_col]
+    
+    # Cria o gráfico de dispersão
+    sns.scatterplot(data=iris_species, x=x_col, y=y_col)
+    
+    # Calcula a correlação de Pearson
+    correlation, p_value = scp.pearsonr(x, y)
+    print(f"Correlação de Pearson entre {x_col} e {y_col} para {species}: {correlation} (p-value: {p_value})")
+    
+    # Exibe o gráfico
+    plt.show()
+
+# Usando a função para vários pares de colunas e espécies
+columns_pairs = [
+    ('SepalLengthCm', 'SepalWidthCm'),
+    ('PetalLengthCm', 'PetalWidthCm'),
+    ('SepalLengthCm', 'PetalLengthCm'),
+    ('SepalLengthCm', 'PetalWidthCm'),
+    ('SepalWidthCm', 'PetalLengthCm'),
+    ('SepalWidthCm', 'PetalWidthCm')
+]
+
+species_list = ['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']
+
+# Loop para processar todas as combinações de espécies e pares de colunas
+for species in species_list:
+    for x_col, y_col in columns_pairs:
+        process_iris_data(iris, species, x_col, y_col)
+
+def heat_map(species):
+    name_specie = iris[iris['Species'] == species]
+    iris_specie = name_specie.drop(columns=['Id', 'Species'])
+    iris_specie.head()
+    cormax = iris_specie.corr()
+    print(cormax)
+    sns.heatmap(cormax, annot=True)
+    plt.show()
+
+for specie in species_list:
+    heat_map(specie)
